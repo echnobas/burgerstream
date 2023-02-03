@@ -3,6 +3,7 @@ import os
 import configparser
 import base64
 import random
+import time
 import string
 from yt_dlp import YoutubeDL
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -50,6 +51,7 @@ def main():
 
 @app.route("/api/v1/getkey/password=<password>", methods=("GET", "POST"))
 def apigetkey(password):
+    time.sleep(0.5)
     if str(password) == BURGER_PASSWORD or DEBUG == "true":
         return {
             "error": None,
