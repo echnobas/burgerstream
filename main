@@ -4,6 +4,7 @@ import configparser
 import base64
 import random
 import string
+from yt_dlp import YoutubeDL
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, url_for, flash, redirect, session, make_response, send_from_directory
 
@@ -14,6 +15,13 @@ HOST = config["config"]["HOST"]
 PORT = config["config"]["PORT"]
 MEDIA_FOLDER = config["config"]["MEDIA_FOLDER"]
 BURGER_PASSWORD = config["config"]["BURGER_PASSWORD"]
+DEBUG = config["config"]["DEBUG"]
+
+ydl_opts = {"format": "best[ext=mp4]",
+            "noplaylist": "True",
+            "extract_flat": "in_playlist",
+            "outtmpl": MEDIA_FOLDER + "/%(title)s.mp4",
+            "match-filters": "%(height)d >= %(width)d"}
 
 app = Flask(__name__)
 
@@ -42,7 +50,7 @@ def main():
 
 @app.route("/api/v1/getkey/password=<password>", methods=("GET", "POST"))
 def apigetkey(password):
-    if str(password) == BURGER_PASSWORD:
+    if str(password) == BURGER_PASSWORD or DEBUG == "true":
         return {
             "error": None,
             "results": {
@@ -50,13 +58,13 @@ def apigetkey(password):
         }
     else:
         return {
-            "error": "Incorrect key"
+            "error": "Incorrect password"
         }
 
 
 @app.route("/api/v1/key=<key>/list", methods=("GET", "POST"))
 def apilist(key):
-    if key == BURGER_KEY:
+    if key == BURGER_KEY or DEBUG == "true":
         return {
             "error": None,
             "results": getMedia()
@@ -69,13 +77,33 @@ def apilist(key):
 
 @app.route("/api/v1/key=<key>/get/filename=<filename>", methods=("GET", "POST"))
 def apiget(key, filename):
-    if key == BURGER_KEY:
+    if key == BURGER_KEY or DEBUG == "true":
         if os.path.exists(os.path.join(MEDIA_FOLDER, filename)):
             return send_from_directory(MEDIA_FOLDER, filename)
         else:
             return {
                 "error": "File does not exist"
             }
+    else:
+        return {
+            "error": "Incorrect key"
+        }
+
+
+@app.route("/api/v1/key=<key>/download/url=<url>", methods=("GET", "POST"))
+def apidownload(key, url):
+    if key == BURGER_KEY or DEBUG == "true":
+        with YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            return info
+            return {
+                "error": None,
+                "results": {"path": str(info["requested_downloads"][0]["_filename"])}
+            }
+        #except:
+        #    return {
+        #        "error": "Download failed"
+        #    }
     else:
         return {
             "error": "Incorrect key"
