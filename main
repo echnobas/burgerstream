@@ -1,0 +1,87 @@
+#!/usr/bin/python3
+import os
+import configparser
+import base64
+import random
+import string
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, render_template, request, url_for, flash, redirect, session, make_response, send_from_directory
+
+config = configparser.ConfigParser()
+config.read("config.ini")
+
+HOST = config["config"]["HOST"]
+PORT = config["config"]["PORT"]
+MEDIA_FOLDER = config["config"]["MEDIA_FOLDER"]
+BURGER_PASSWORD = config["config"]["BURGER_PASSWORD"]
+
+app = Flask(__name__)
+
+
+def randomString(length):
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(length))
+
+
+BURGER_KEY = randomString(256)
+
+
+if not os.path.exists(MEDIA_FOLDER):
+    os.mkdir(MEDIA_FOLDER)
+
+
+def getMedia():
+    media = os.listdir(MEDIA_FOLDER)
+    return media
+
+
+@app.route("/", methods=("GET", "POST"))
+def main():
+    return render_template("main.html", sitename=request.url)
+
+
+@app.route("/api/v1/getkey/password=<password>", methods=("GET", "POST"))
+def apigetkey(password):
+    if str(password) == BURGER_PASSWORD:
+        return {
+            "error": None,
+            "results": {
+                "key": BURGER_KEY}
+        }
+    else:
+        return {
+            "error": "Incorrect key"
+        }
+
+
+@app.route("/api/v1/key=<key>/list", methods=("GET", "POST"))
+def apilist(key):
+    if key == BURGER_KEY:
+        return {
+            "error": None,
+            "results": getMedia()
+        }
+    else:
+        return {
+            "error": "Incorrect key"
+        }
+
+
+@app.route("/api/v1/key=<key>/get/filename=<filename>", methods=("GET", "POST"))
+def apiget(key, filename):
+    if key == BURGER_KEY:
+        if os.path.exists(os.path.join(MEDIA_FOLDER, filename)):
+            return send_from_directory(MEDIA_FOLDER, filename)
+        else:
+            return {
+                "error": "File does not exist"
+            }
+    else:
+        return {
+            "error": "Incorrect key"
+        }
+
+
+if __name__ == "__main__":
+    from waitress import serve
+    serve(app, host=HOST, port=PORT)

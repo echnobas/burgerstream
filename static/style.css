@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter&family=Roboto+Mono&display=swap');
+
+body {
+    margin-top: 20%;
+    font-family: 'Inter', sans-serif;
+    text-align: center;
+}
+
+.list {
+    position: absolute;
+    padding: 10px;
+    right: 25%;
+    width: 50%;
+    border: 1px;
+    border-radius: 8px;
+    border-style: solid;
+    border-color: gray;
+}
+
+.list a {
+    color: rgb(103, 71, 221);
+    margin-top: 10px;
+}
