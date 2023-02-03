@@ -2,8 +2,8 @@
 import os
 import configparser
 import base64
-import random
 import time
+import jwt
 import string
 from yt_dlp import YoutubeDL
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -27,12 +27,7 @@ ydl_opts = {"format": "best[ext=mp4]",
 app = Flask(__name__)
 
 
-def randomString(length):
-    letters = string.ascii_lowercase
-    return ''.join(random.choice(letters) for i in range(length))
-
-
-BURGER_KEY = randomString(256)
+BURGER_KEY = jwt.encode({str(os.urandom(2048)): str(os.urandom(2048))}, str(os.urandom(2048)), algorithm="HS256")
 
 
 if not os.path.exists(MEDIA_FOLDER):
@@ -97,7 +92,6 @@ def apidownload(key, url):
     if key == BURGER_KEY or DEBUG == "true":
         with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
-            return info
             return {
                 "error": None,
                 "results": {"path": str(info["requested_downloads"][0]["_filename"])}
